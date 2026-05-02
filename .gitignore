@@ -1,0 +1,31 @@
+# Visual Studio / MSBuild
+.vs/
+*.user
+*.suo
+*.aps
+*.pch
+*.vspscc
+*.vssscc
+*.opendb
+*.opensdf
+*.sdf
+*.cachefile
+*.tlog
+*.log
+
+# Build output
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+ARM64/
+ipch/
+
+# Inno Setup
+installer/Output/
+
+# OS noise
+.DS_Store
+Thumbs.db
