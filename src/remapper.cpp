@@ -2,6 +2,7 @@
 
 #include <windows.h>
 
+#include "kb_hook.hpp"
 #include "logging.hpp"
 
 namespace magic_remap {
@@ -54,6 +55,8 @@ void Remapper::SendKey(USHORT vk, USHORT scan, bool key_up, bool extended) {
     inp.ki.wVk = vk;
     inp.ki.wScan = scan;
     inp.ki.dwFlags = (key_up ? KEYEVENTF_KEYUP : 0) | (extended ? KEYEVENTF_EXTENDEDKEY : 0);
+    // Marca como nossa injeção: o hook ignora teclas com este dwExtraInfo.
+    inp.ki.dwExtraInfo = KbHook::kInjectTag;
     SendInput(1, &inp, sizeof(INPUT));
 }
 
@@ -61,14 +64,91 @@ void Remapper::SendVk(USHORT vk, bool key_up) {
     SendKey(vk, ScanFor(vk), key_up, IsExtendedScan(vk));
 }
 
+void Remapper::SendUnicode(wchar_t ch) {
+    INPUT inp[2]{};
+    inp[0].type = INPUT_KEYBOARD;
+    inp[0].ki.wVk = 0;
+    inp[0].ki.wScan = static_cast<WORD>(ch);
+    inp[0].ki.dwFlags = KEYEVENTF_UNICODE;
+    inp[0].ki.dwExtraInfo = KbHook::kInjectTag;
+    inp[1].type = INPUT_KEYBOARD;
+    inp[1].ki.wVk = 0;
+    inp[1].ki.wScan = static_cast<WORD>(ch);
+    inp[1].ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
+    inp[1].ki.dwExtraInfo = KbHook::kInjectTag;
+    SendInput(2, inp, sizeof(INPUT));
+}
+
+wchar_t Remapper::ComposeDead(PendingDead d, USHORT vk, bool shift) {
+    if (vk == VK_SPACE) return DeadCharAlone(d);
+    if (vk < 'A' || vk > 'Z') return 0;
+
+    switch (d) {
+        case PendingDead::Acute:
+            switch (vk) {
+                case 'A': return shift ? L'Á' : L'á';
+                case 'E': return shift ? L'É' : L'é';
+                case 'I': return shift ? L'Í' : L'í';
+                case 'O': return shift ? L'Ó' : L'ó';
+                case 'U': return shift ? L'Ú' : L'ú';
+                case 'Y': return shift ? L'Ý' : L'ý';
+                case 'C': return shift ? L'Ć' : L'ć';
+            }
+            break;
+        case PendingDead::Grave:
+            switch (vk) {
+                case 'A': return shift ? L'À' : L'à';
+                case 'E': return shift ? L'È' : L'è';
+                case 'I': return shift ? L'Ì' : L'ì';
+                case 'O': return shift ? L'Ò' : L'ò';
+                case 'U': return shift ? L'Ù' : L'ù';
+            }
+            break;
+        case PendingDead::Circumflex:
+            switch (vk) {
+                case 'A': return shift ? L'Â' : L'â';
+                case 'E': return shift ? L'Ê' : L'ê';
+                case 'I': return shift ? L'Î' : L'î';
+                case 'O': return shift ? L'Ô' : L'ô';
+                case 'U': return shift ? L'Û' : L'û';
+            }
+            break;
+        case PendingDead::Tilde:
+            switch (vk) {
+                case 'A': return shift ? L'Ã' : L'ã';
+                case 'N': return shift ? L'Ñ' : L'ñ';
+                case 'O': return shift ? L'Õ' : L'õ';
+            }
+            break;
+        case PendingDead::Diaeresis:
+            switch (vk) {
+                case 'A': return shift ? L'Ä' : L'ä';
+                case 'E': return shift ? L'Ë' : L'ë';
+                case 'I': return shift ? L'Ï' : L'ï';
+                case 'O': return shift ? L'Ö' : L'ö';
+                case 'U': return shift ? L'Ü' : L'ü';
+                case 'Y': return shift ? L'Ÿ' : L'ÿ';
+            }
+            break;
+        default:
+            break;
+    }
+    return 0;
+}
+
+wchar_t Remapper::DeadCharAlone(PendingDead d) {
+    switch (d) {
+        case PendingDead::Acute:      return L'´';  // ´
+        case PendingDead::Grave:      return L'`';
+        case PendingDead::Circumflex: return L'^';
+        case PendingDead::Tilde:      return L'~';
+        case PendingDead::Diaeresis:  return L'¨';  // ¨
+        default:                       return 0;
+    }
+}
+
 void Remapper::SyncMods(DesiredMods d) {
-    auto adjust = [&](bool& cur, bool want, USHORT vk) {
-        if (cur == want) return;
-        SendVk(vk, /*key_up=*/cur);  // se cur=true, queremos liberar
-        cur = want;
-    };
     // Ordem: liberar primeiro o que vai sair, depois pressionar o que entra.
-    // Isso evita combinações estranhas no meio (ex.: Ctrl+Alt brevemente).
     if (synth_shift_ && !d.shift) { SendVk(VK_LSHIFT, true); synth_shift_ = false; }
     if (synth_ctrl_  && !d.ctrl)  { SendVk(VK_LCONTROL, true); synth_ctrl_ = false; }
     if (synth_alt_   && !d.alt)   { SendVk(VK_LMENU, true); synth_alt_ = false; }
@@ -80,94 +160,109 @@ void Remapper::SyncMods(DesiredMods d) {
     if (!synth_win_   && d.win)   { SendVk(VK_LWIN, false); synth_win_ = true; }
 }
 
-void Remapper::Process(USHORT vk, USHORT scan, bool up, bool e0, bool is_apple) {
-    // Pânico: Shift+Ctrl+Alt+F12 (em qualquer teclado) — verifica antes de qualquer remap.
+Remapper::Action Remapper::Process(USHORT vk, USHORT scan, bool up, bool e0, bool is_apple) {
+    // Pânico: Shift+Ctrl+Alt+F12 (em qualquer teclado).
     if (vk == VK_F12 && !up) {
         bool shift = (GetAsyncKeyState(VK_SHIFT)   & 0x8000) != 0;
         bool ctrl  = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0;
         bool alt   = (GetAsyncKeyState(VK_MENU)    & 0x8000) != 0;
         if (shift && ctrl && alt) {
             panic_requested_ = true;
-            MR_LOG(L"PANIC combo detected — releasing all and quitting");
-            return;
+            MR_LOG(L"PANIC combo detectado");
+            return Action::Suppress;
         }
-        // Também aceitar combo Apple-only mesmo sem GetAsyncKeyState refletir Cmd/Opt:
         if (apple_shift_held_ && apple_ctrl_held_ &&
             (apple_opt_held_ || apple_cmd_held_)) {
             panic_requested_ = true;
-            return;
+            return Action::Suppress;
         }
     }
 
-    // Eventos de teclados não-Apple ou app desabilitado: passthrough verbatim.
+    // Não-Apple ou app desabilitado: deixa o Windows entregar normalmente.
     if (!is_apple || !enabled_) {
-        SendKey(vk, scan, up, e0);
-        return;
+        return Action::PassThrough;
     }
 
-    // ---- Apple: estado físico ----
+    // ---- Apple: estado físico de modificadoras ----
     if (vk == VK_LSHIFT || vk == VK_RSHIFT || vk == VK_SHIFT) {
         apple_shift_held_ = !up;
-        SendKey(vk, scan, up, e0);
-        return;
+        return Action::PassThrough;  // Shift Apple = Shift normal
     }
     if (vk == VK_LCONTROL || vk == VK_RCONTROL || vk == VK_CONTROL) {
         apple_ctrl_held_ = !up;
         if (cfg_.swap_ctrl_too) {
-            // Ctrl→Win
+            // Ctrl→Win: suprime Ctrl, injeta Win.
             USHORT remap = (vk == VK_RCONTROL) ? VK_RWIN : VK_LWIN;
             SendKey(remap, ScanFor(remap), up, true);
-        } else {
-            SendKey(vk, scan, up, e0);
+            return Action::Suppress;
         }
-        return;
+        return Action::PassThrough;
     }
     if (vk == VK_LWIN || vk == VK_RWIN) {
-        // Apple Cmd: lazy — não emite nada.
+        // Apple Cmd: suprime sempre. Lógica do remap acontece em HandleCmdCombo.
         if (up) {
             apple_cmd_held_ = false;
-            // Liberar synth mods que estavam servindo Cmd.
+            // Libera Ctrl/Alt sintetizados pelo combo. Mantém Shift sintético
+            // somente se ainda for de interesse.
             SyncMods({false, false, apple_shift_held_ && synth_shift_, false});
-            // Note: synth_shift_ só é true se em algum momento tivermos sintetizado
-            // Shift; mas Shift de Apple é passthrough, então normalmente isso é false.
         } else {
             apple_cmd_held_ = true;
         }
-        return;
+        return Action::Suppress;
     }
     if (vk == VK_LMENU || vk == VK_RMENU || vk == VK_MENU) {
-        // Apple Option (= Alt físico): lazy — não emite Alt até justificar.
+        // Apple Option (= Alt físico): suprime; vira Alt só quando o combo justifica.
         if (up) {
             apple_opt_held_ = false;
             SyncMods({false, false, false, false});
         } else {
             apple_opt_held_ = true;
         }
-        return;
+        return Action::Suppress;
     }
 
     // Não-modificador.
     if (apple_cmd_held_) {
         HandleCmdCombo(vk, scan, up, e0);
-        return;
+        return Action::Suppress;
     }
     if (apple_opt_held_) {
         HandleOptCombo(vk, scan, up, e0);
-        return;
+        return Action::Suppress;
     }
 
-    // Sem modificador especial Apple: passthrough.
+    // Up de tecla previamente "comida" pela composição dead-key.
+    if (up && active_remap_[vk & 0xFF] == kSuppress) {
+        active_remap_[vk & 0xFF] = 0;
+        return Action::Suppress;
+    }
+
+    // Down com dead-key pendente: tenta compor a vogal acentuada.
+    if (!up && pending_dead_ != PendingDead::None) {
+        PendingDead pd = pending_dead_;
+        pending_dead_ = PendingDead::None;
+        wchar_t composed = ComposeDead(pd, vk, apple_shift_held_);
+        if (composed != 0) {
+            SendUnicode(composed);
+            active_remap_[vk & 0xFF] = kSuppress;
+            return Action::Suppress;
+        }
+        // Tecla não combina: emite o acento sozinho e deixa a letra passar normal.
+        wchar_t alone = DeadCharAlone(pd);
+        if (alone) SendUnicode(alone);
+    }
+
+    // Sem modificador especial Apple: passthrough verbatim.
     SyncMods({false, false, false, false});
-    SendKey(vk, scan, up, e0);
+    return Action::PassThrough;
 }
 
 void Remapper::HandleCmdCombo(USHORT vk, USHORT scan, bool up, bool e0) {
-    // Liberação: olha o que mapeamos no down, replica o release.
     if (up) {
         USHORT remapped = active_remap_[vk & 0xFF];
         active_remap_[vk & 0xFF] = 0;
         if (remapped == 0) return;
-        if (remapped == kSuppress) return;  // combo atômico, release suprimido
+        if (remapped == kSuppress) return;
         SendKey(remapped, ScanFor(remapped), true, IsExtendedScan(remapped));
         return;
     }
@@ -202,7 +297,6 @@ void Remapper::HandleCmdCombo(USHORT vk, USHORT scan, bool up, bool e0) {
 
         case VK_SPACE:
             if (cfg_.cmd_space) {
-                // Tap Win key alone (abre Iniciar/Search).
                 SyncMods({false, false, false, false});
                 SendVk(VK_LWIN, false);
                 SendVk(VK_LWIN, true);
@@ -264,7 +358,6 @@ void Remapper::HandleCmdCombo(USHORT vk, USHORT scan, bool up, bool e0) {
 
         case VK_BACK:
             if (cfg_.cmd_backspace) {
-                // Selecionar até o início da linha (Shift+Home) e Delete (atômico).
                 SyncMods({false, false, true, false});
                 SendVk(VK_HOME, false);
                 SendVk(VK_HOME, true);
@@ -299,6 +392,34 @@ void Remapper::HandleOptCombo(USHORT vk, USHORT scan, bool up, bool e0) {
     }
 
     auto track = [&](USHORT emitted) { active_remap_[vk & 0xFF] = emitted; };
+
+    // Mac US dead-key combos: Option+E/I/N/U/` arma o acento; Option+C insere ç direto.
+    switch (vk) {
+        case 'E':
+            pending_dead_ = PendingDead::Acute;
+            track(kSuppress);
+            return;
+        case 'I':
+            pending_dead_ = PendingDead::Circumflex;
+            track(kSuppress);
+            return;
+        case 'N':
+            pending_dead_ = PendingDead::Tilde;
+            track(kSuppress);
+            return;
+        case 'U':
+            pending_dead_ = PendingDead::Diaeresis;
+            track(kSuppress);
+            return;
+        case VK_OEM_3:  // ` em layout US
+            pending_dead_ = PendingDead::Grave;
+            track(kSuppress);
+            return;
+        case 'C':
+            SendUnicode(apple_shift_held_ ? L'Ç' : L'ç');
+            track(kSuppress);
+            return;
+    }
 
     switch (vk) {
         case VK_LEFT:

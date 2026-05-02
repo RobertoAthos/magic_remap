@@ -23,11 +23,19 @@ bool App::Init(HWND hwnd, HINSTANCE hInstance) {
     filter_    = std::make_unique<DeviceFilter>(config_.vendor_ids);
     remapper_  = std::make_unique<Remapper>(config_);
     raw_input_ = std::make_unique<RawInput>(*filter_, *remapper_);
+    kb_hook_   = std::make_unique<KbHook>(*remapper_);
     tray_      = std::make_unique<Tray>(*this);
 
     if (!raw_input_->Register(hwnd)) {
         MessageBoxW(hwnd,
                     L"Falha ao registrar Raw Input. O app não pode prosseguir.",
+                    L"MagicRemap", MB_OK | MB_ICONERROR);
+        return false;
+    }
+    kb_hook_->SetPanicTarget(hwnd);
+    if (!kb_hook_->Install()) {
+        MessageBoxW(hwnd,
+                    L"Falha ao instalar o low-level keyboard hook.",
                     L"MagicRemap", MB_OK | MB_ICONERROR);
         return false;
     }
@@ -48,6 +56,7 @@ bool App::Init(HWND hwnd, HINSTANCE hInstance) {
 }
 
 void App::Shutdown() {
+    if (kb_hook_) kb_hook_->Uninstall();
     if (remapper_) remapper_->ReleaseAllSynth();
     if (raw_input_) raw_input_->Unregister();
     if (tray_) tray_->Destroy();

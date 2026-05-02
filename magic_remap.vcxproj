@@ -56,6 +56,7 @@
       <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;UNICODE;_UNICODE;NOMINMAX;WIN32_LEAN_AND_MEAN;_WIN32_WINNT=0x0A00;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -79,6 +80,7 @@
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;UNICODE;_UNICODE;NOMINMAX;WIN32_LEAN_AND_MEAN;_WIN32_WINNT=0x0A00;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -104,6 +106,7 @@
     <ClCompile Include="src\raw_input.cpp" />
     <ClCompile Include="src\device_filter.cpp" />
     <ClCompile Include="src\remapper.cpp" />
+    <ClCompile Include="src\kb_hook.cpp" />
     <ClCompile Include="src\tray.cpp" />
     <ClCompile Include="src\config.cpp" />
     <ClCompile Include="src\autostart.cpp" />
@@ -115,6 +118,7 @@
     <ClInclude Include="src\raw_input.hpp" />
     <ClInclude Include="src\device_filter.hpp" />
     <ClInclude Include="src\remapper.hpp" />
+    <ClInclude Include="src\kb_hook.hpp" />
     <ClInclude Include="src\tray.hpp" />
     <ClInclude Include="src\config.hpp" />
     <ClInclude Include="src\autostart.hpp" />

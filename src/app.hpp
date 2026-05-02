@@ -6,6 +6,7 @@
 
 #include "config.hpp"
 #include "device_filter.hpp"
+#include "kb_hook.hpp"
 #include "raw_input.hpp"
 #include "remapper.hpp"
 #include "tray.hpp"
@@ -40,6 +41,7 @@ private:
     std::unique_ptr<DeviceFilter> filter_;
     std::unique_ptr<Remapper>     remapper_;
     std::unique_ptr<RawInput>     raw_input_;
+    std::unique_ptr<KbHook>       kb_hook_;
     std::unique_ptr<Tray>         tray_;
 };
 

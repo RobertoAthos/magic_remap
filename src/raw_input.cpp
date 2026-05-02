@@ -20,7 +20,11 @@ bool RawInput::Register(HWND hwnd) {
     rid.usUsage     = 0x06;  // Keyboard
     // INPUTSINK: recebe mesmo sem foco. NOLEGACY: suprime entrega original ao sistema.
     // DEVNOTIFY: recebe WM_INPUT_DEVICE_CHANGE.
-    rid.dwFlags    = RIDEV_INPUTSINK | RIDEV_NOLEGACY | RIDEV_DEVNOTIFY;
+    // V2: NOLEGACY removido (saturava SIQ e congelava o sistema).
+    // Suprimir/injetar agora é responsabilidade do WH_KEYBOARD_LL hook.
+    // Raw Input fica apenas para identificar dispositivos (logging diagnóstico
+    // e WM_INPUT_DEVICE_CHANGE para invalidar cache do filtro).
+    rid.dwFlags    = RIDEV_INPUTSINK | RIDEV_DEVNOTIFY;
     rid.hwndTarget = hwnd;
     if (!RegisterRawInputDevices(&rid, 1, sizeof(rid))) {
         DWORD err = GetLastError();
@@ -79,9 +83,9 @@ void RawInput::HandleWmInput(LPARAM lParam) {
         vk = e0 ? VK_RMENU : VK_LMENU;
     }
 
-    bool is_apple = filter_.IsApple(kb.hDevice);
-
-    remapper_.Process(vk, scan, up, e0, is_apple);
+    // V2: apenas atualiza/loga o dispositivo. O remapping é feito pelo hook.
+    bool is_apple = filter_.IsApple(raw->header.hDevice);
+    (void)vk; (void)scan; (void)up; (void)e0; (void)is_apple;
 }
 
 }  // namespace magic_remap
