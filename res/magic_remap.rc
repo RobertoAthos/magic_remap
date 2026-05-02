@@ -10,8 +10,8 @@
 
 // ---- Version info ------------------------------------------------------------
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION    1,0,0,0
- PRODUCTVERSION 1,0,0,0
+ FILEVERSION    1,0,1,0
+ PRODUCTVERSION 1,0,1,0
  FILEFLAGSMASK  VS_FFI_FILEFLAGSMASK
 #ifdef _DEBUG
  FILEFLAGS      VS_FF_DEBUG
@@ -28,12 +28,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName",      "MagicRemap"
             VALUE "FileDescription",  "Apple Magic Keyboard remapper for Windows"
-            VALUE "FileVersion",      "1.0.0.0"
+            VALUE "FileVersion",      "1.0.1.0"
             VALUE "InternalName",     "magic_remap"
             VALUE "LegalCopyright",   "MIT License"
             VALUE "OriginalFilename", "magic_remap.exe"
             VALUE "ProductName",      "MagicRemap"
-            VALUE "ProductVersion",   "1.0.0.0"
+            VALUE "ProductVersion",   "1.0.1.0"
         END
     END
     BLOCK "VarFileInfo"

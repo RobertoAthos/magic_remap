@@ -85,7 +85,7 @@ void App::OpenConfig() {
 
 void App::ShowAbout() {
     MessageBoxW(hwnd_,
-        L"MagicRemap 1.0.0\n\n"
+        L"MagicRemap 1.0.1\n\n"
         L"Remapeia o Apple Magic Keyboard no Windows.\n"
         L"Licença MIT.\n\n"
         L"Tecla de pânico: Shift+Ctrl+Alt+F12",

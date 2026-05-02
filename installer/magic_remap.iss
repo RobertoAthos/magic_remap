@@ -3,7 +3,7 @@
 ; Pré-requisito: x64\Release\magic_remap.exe já compilado.
 
 #define MyAppName       "MagicRemap"
-#define MyAppVersion    "1.0.0"
+#define MyAppVersion    "1.0.1"
 #define MyAppPublisher  "MagicRemap"
 #define MyAppURL        "https://github.com/robertoathos/magic_remap"
 #define MyAppExeName    "magic_remap.exe"

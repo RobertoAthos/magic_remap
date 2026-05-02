@@ -4,7 +4,7 @@ Win32 app que faz o **Apple Magic Keyboard** se comportar de forma natural no Wi
 
 ## Download
 
-[**MagicRemapSetup-1.0.0.exe**](https://github.com/RobertoAthos/magic_remap/releases/latest/download/MagicRemapSetup-1.0.0.exe) (~2.1 MB) — instalador para Windows 64-bit. Veja todas as versões em [Releases](https://github.com/RobertoAthos/magic_remap/releases).
+[**MagicRemapSetup-1.0.1.exe**](https://github.com/RobertoAthos/magic_remap/releases/latest/download/MagicRemapSetup-1.0.1.exe) (~2.1 MB) — instalador para Windows 64-bit. Veja todas as versões em [Releases](https://github.com/RobertoAthos/magic_remap/releases).
 
 > ⚠️ O instalador não é assinado por um certificado pago. O SmartScreen do Windows vai mostrar um aviso na primeira execução: clique em **"Mais informações"** → **"Executar mesmo assim"**. Se você tiver o **Smart App Control** ativado (Windows 11), ele bloqueará o app — desligue em *Configurações → Privacidade e segurança → Segurança do Windows → Controle de aplicativos e do navegador → Configurações de proteção baseada em reputação*.
 
@@ -68,7 +68,7 @@ Pré-requisitos: [Inno Setup 6](https://jrsoftware.org/isinfo.php).
 ```powershell
 # Após o build do exe:
 iscc installer\magic_remap.iss
-# Saída: installer\Output\MagicRemapSetup-1.0.0.exe
+# Saída: installer\Output\MagicRemapSetup-1.0.1.exe
 ```
 
 O instalador:
