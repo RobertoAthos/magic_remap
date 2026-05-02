@@ -2,6 +2,12 @@
 
 Win32 app que faz o **Apple Magic Keyboard** se comportar de forma natural no Windows. Detecta o teclado pelo VID HID `0x05AC` e remapeia **só as teclas vindas dele** — qualquer outro teclado plugado continua funcionando normalmente.
 
+## Download
+
+[**MagicRemapSetup-1.0.0.exe**](https://github.com/RobertoAthos/magic_remap/releases/latest/download/MagicRemapSetup-1.0.0.exe) (~2.1 MB) — instalador para Windows 64-bit. Veja todas as versões em [Releases](https://github.com/RobertoAthos/magic_remap/releases).
+
+> ⚠️ O instalador não é assinado por um certificado pago. O SmartScreen do Windows vai mostrar um aviso na primeira execução: clique em **"Mais informações"** → **"Executar mesmo assim"**. Se você tiver o **Smart App Control** ativado (Windows 11), ele bloqueará o app — desligue em *Configurações → Privacidade e segurança → Segurança do Windows → Controle de aplicativos e do navegador → Configurações de proteção baseada em reputação*.
+
 ## O que ele faz
 
 - `⌘ Cmd` (esquerdo e direito) passa a agir como `Ctrl` → `Cmd+C`, `Cmd+V`, `Cmd+Z`, `Cmd+A`, `Cmd+S`, `Cmd+T`, `Cmd+W`, etc. funcionam direto.
