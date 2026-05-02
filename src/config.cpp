@@ -110,6 +110,7 @@ Config Load() {
     cfg.option_arrows    = ReadBool(L"Shortcuts", L"option_arrows",    true, p);
     cfg.cmd_backspace    = ReadBool(L"Shortcuts", L"cmd_backspace",    true, p);
     cfg.option_backspace = ReadBool(L"Shortcuts", L"option_backspace", true, p);
+    cfg.cmd_shift_screenshot = ReadBool(L"Shortcuts", L"cmd_shift_screenshot", true, p);
 
     std::wstring csv = ReadString(L"Devices", L"vendor_ids", L"05AC,004C", p);
     cfg.vendor_ids = ParseVidList(csv);
@@ -133,6 +134,7 @@ void Save(const Config& cfg) {
     WriteBool(L"Shortcuts", L"option_arrows",    cfg.option_arrows,    p);
     WriteBool(L"Shortcuts", L"cmd_backspace",    cfg.cmd_backspace,    p);
     WriteBool(L"Shortcuts", L"option_backspace", cfg.option_backspace, p);
+    WriteBool(L"Shortcuts", L"cmd_shift_screenshot", cfg.cmd_shift_screenshot, p);
 
     WritePrivateProfileStringW(L"Devices", L"vendor_ids",
                                FormatVidList(cfg.vendor_ids).c_str(), p);

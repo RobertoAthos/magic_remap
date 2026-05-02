@@ -20,6 +20,7 @@ Win32 app que faz o **Apple Magic Keyboard** se comportar de forma natural no Wi
   - `Option+←/→` → `Ctrl+←/→` (pular palavra)
   - `Option+Backspace` → `Ctrl+Backspace`
   - `Cmd+Backspace` → apaga até o início da linha
+  - `Cmd+Shift+3/4/5` → `Win+Shift+S` (Ferramenta de Captura)
 - **Acentos no estilo macOS US** (úteis para português):
   - `Option+E` então vogal → `á é í ó ú` (com Shift na vogal vira maiúsculo)
   - `Option+I` então vogal → `â ê î ô û`

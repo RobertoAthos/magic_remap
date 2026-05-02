@@ -372,6 +372,19 @@ void Remapper::HandleCmdCombo(USHORT vk, USHORT scan, bool up, bool e0) {
             }
             return;
 
+        case '3':
+        case '4':
+        case '5':
+            if (apple_shift_held_ && cfg_.cmd_shift_screenshot) {
+                // Cmd+Shift+3/4/5 (macOS screenshot) → Win+Shift+S (Snipping Tool)
+                SyncMods({false, false, true, true});  // Shift + Win
+                SendVk('S', false);
+                SendVk('S', true);
+                track(kSuppress);
+                return;
+            }
+            break;  // sem shift, cai no default Cmd→Ctrl+number
+
         default:
             // Default: Cmd→Ctrl
             SyncMods({true, false, apple_shift_held_, false});

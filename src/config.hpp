@@ -20,6 +20,7 @@ struct Config {
     bool option_arrows  = true;
     bool cmd_backspace  = true;
     bool option_backspace = true;
+    bool cmd_shift_screenshot = true;  // Cmd+Shift+3/4/5 → Win+Shift+S
 
     // [Devices] — VIDs HID a tratar como Apple (lista de uint16 em hex).
     std::vector<unsigned short> vendor_ids = {0x05AC, 0x004C};
